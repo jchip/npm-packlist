@@ -94,6 +94,13 @@ const npmWalker = Class => class Walker extends Class {
       this.bundledScopes = []
       this.packageJsonCache = this.parent.packageJsonCache
     }
+    this.includeSymlinks = opt.includeSymlinks
+  }
+
+  walkerOpt(entry) {
+    const opt = super.walkerOpt(entry);
+    opt.includeSymlinks = this.includeSymlinks;
+    return opt;
   }
 
   onReaddir (entries) {
@@ -207,7 +214,7 @@ const npmWalker = Class => class Walker extends Class {
 
   // override parent onstat function to nix all symlinks
   onstat (st, entry, file, dir, then) {
-    if (st.isSymbolicLink())
+    if (!this.includeSymlinks && st.isSymbolicLink())
       then()
     else
       super.onstat(st, entry, file, dir, then)
@@ -238,7 +245,7 @@ class Walker extends npmWalker(IgnoreWalker) {
 }
 
 class WalkerSync extends npmWalker(IgnoreWalkerSync) {
-  walker (entry, then) {
+  walker(entry, then) {
     new WalkerSync(this.walkerOpt(entry)).start()
     then()
   }
@@ -287,3 +294,4 @@ module.exports = walk
 walk.sync = walkSync
 walk.Walker = Walker
 walk.WalkerSync = WalkerSync
+
